@@ -1,4 +1,6 @@
 const fs = require('fs');
+const path = require('path');
+const {execFile} = require('child_process');
 const express = require('express');
 const app = express();
 const Busboy = require('busboy');
@@ -13,8 +15,51 @@ app.use(compression());
 winston.remove(winston.transports.Console);
 winston.add(winston.transports.Console, {'timestamp': true});
 
-app.get('/health', function(req, res) {
-    res.status(200).send('online');
+function isFfmpegReachable(timeoutMs) {
+    return new Promise((resolve, reject) => {
+        execFile('ffmpeg', ['-version'], {timeout: timeoutMs}, (err) => {
+            if (err) return reject(err);
+            return resolve(true);
+        });
+    });
+}
+
+function isUploadsDirWritable() {
+    const uploadsDir = path.join(__dirname, 'uploads');
+    try {
+        fs.accessSync(uploadsDir, fs.constants.W_OK);
+        return true;
+    } catch (err) {
+        err.uploadsDir = uploadsDir;
+        throw err;
+    }
+}
+
+app.get('/health', async function(req, res) {
+    try {
+        // Keep this endpoint fast (Docker healthcheck timeout is 3s).
+        isUploadsDirWritable();
+        await isFfmpegReachable(1500);
+        res.status(200).send('online');
+    } catch (err) {
+        winston.error(JSON.stringify({
+            type: 'health',
+            message: 'Dependency not reachable',
+            error: {
+                code: err && err.code,
+                message: err && err.message,
+                uploadsDir: err && err.uploadsDir,
+            },
+        }));
+        res.status(503).json({
+            status: 'offline',
+            error: {
+                code: (err && err.code) || 'UNREACHABLE',
+                message: (err && err.message) || 'Dependency not reachable',
+                uploadsDir: err && err.uploadsDir,
+            },
+        });
+    }
 });
 
 for (let prop in endpoints.types) {

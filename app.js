@@ -24,21 +24,10 @@ function isFfmpegReachable(timeoutMs) {
     });
 }
 
-function isUploadsDirWritable() {
-    const uploadsDir = path.join(__dirname, 'uploads');
-    try {
-        fs.accessSync(uploadsDir, fs.constants.W_OK);
-        return true;
-    } catch (err) {
-        err.uploadsDir = uploadsDir;
-        throw err;
-    }
-}
 
 app.get('/health', async function(req, res) {
     try {
         // Keep this endpoint fast (Docker healthcheck timeout is 3s).
-        isUploadsDirWritable();
         await isFfmpegReachable(1500);
         res.status(200).send('online');
     } catch (err) {

@@ -8,7 +8,7 @@ on:
 jobs:
   production:
     name: CI Pipeline - Production
-    uses: igualparatodos/ci-workflows/.github/workflows/ci-kubernetes.yaml@master
+    uses: igualparatodos/ci-workflows/.github/workflows/ci-kubernetes.yaml@main
     permissions:
       contents: write
       issues: write

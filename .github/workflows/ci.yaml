@@ -7,7 +7,8 @@ on:
       - main
 
 env:
-  APP_NAME: production-audio-converter
+  ECR_REPO: production-audio-converter
+  ARGOCD_APP_NAME: audio-converter
   AWS_ACCOUNT_ID: "992382838579"
   AWS_REGION: "sa-east-1"
   ARGOCD_SERVER_URL: "argocd.igual.cloud"
@@ -42,8 +43,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.APP_NAME }}:latest
-            ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.APP_NAME }}:${{ github.sha }}
+            ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPO }}:latest
+            ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPO }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -62,13 +63,13 @@ jobs:
 
       - name: Update Image Tag in ArgoCD
         run: |
-          argocd app set ${{ env.APP_NAME }} \
+          argocd app set ${{ env.ARGOCD_APP_NAME }} \
             --server ${{ env.ARGOCD_SERVER_URL }} \
             --parameter igual-application-chart.image.tag=${{ github.sha }} \
             --grpc-web
 
           echo "Waiting for ArgoCD to complete parameter update..."
-          argocd app wait ${{ env.APP_NAME }} \
+          argocd app wait ${{ env.ARGOCD_APP_NAME }} \
             --server ${{ env.ARGOCD_SERVER_URL }} \
             --operation \
             --timeout 60 \
@@ -76,12 +77,12 @@ jobs:
 
       - name: Sync ArgoCD Application
         run: |
-          argocd app get ${{ env.APP_NAME }} \
+          argocd app get ${{ env.ARGOCD_APP_NAME }} \
             --server ${{ env.ARGOCD_SERVER_URL }} \
             --refresh \
             --grpc-web
 
-          argocd app sync ${{ env.APP_NAME }} \
+          argocd app sync ${{ env.ARGOCD_APP_NAME }} \
             --server ${{ env.ARGOCD_SERVER_URL }} \
             --force \
             --prune \
@@ -93,7 +94,7 @@ jobs:
         run: |
           echo "Waiting for application to sync..."
           for i in {1..60}; do
-            APP_STATUS=$(argocd app get ${{ env.APP_NAME }} \
+            APP_STATUS=$(argocd app get ${{ env.ARGOCD_APP_NAME }} \
               --server ${{ env.ARGOCD_SERVER_URL }} \
               --grpc-web \
               --output json 2>/dev/null || echo "{}")

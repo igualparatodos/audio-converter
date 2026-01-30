@@ -1,6 +1,7 @@
 name: CI (Kubernetes)
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main

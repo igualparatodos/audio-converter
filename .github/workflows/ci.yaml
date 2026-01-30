@@ -8,7 +8,7 @@ on:
 
 env:
   ECR_REPO: production-audio-converter
-  ARGOCD_APP_NAME: audio-converter
+  ARGOCD_APP_NAME: production-audio-converter
   AWS_ACCOUNT_ID: "992382838579"
   AWS_REGION: "sa-east-1"
   ARGOCD_SERVER_URL: "argocd.igual.cloud"
